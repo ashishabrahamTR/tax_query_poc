@@ -1,5 +1,4 @@
-from nlp.query_parser import QueryParser
-from mapping.tax_form_mapper import TaxFormMapper
+from nlp.cline_tax_parser import ClineTaxParser
 from api.odata_client import ODataClient
 
 def process_query(text: str) -> dict:
@@ -12,32 +11,32 @@ def process_query(text: str) -> dict:
     Returns:
         dict: The processed result containing the requested tax information
     """
-    parser = QueryParser()
-    mapper = TaxFormMapper()
+    parser = ClineTaxParser()
     api_client = ODataClient()
     
     try:
-        # 1. Parse query to get year and type
+        # Parse query and get mapping info using CLINE
         query_info = parser.parse_query(text)
         print(f"\nParsed Query: {query_info}")
         
-        # 2. Map to tax form fields
-        form_info = mapper.get_query_info(query_info['query_type'])
-        print(f"\nForm Mapping: {form_info}")
-        
-        # 3. Get data from API
+        # Get data from API
         result = api_client.get_data(
-            eorg=form_info['eorg'],
+            eorg=query_info['eorg'],
             year=query_info['year'],
-            form_name=form_info['form_name'],
-            field_name=form_info['field_name']
+            form_name=query_info['form_name'],
+            field_name=query_info['field_name']
         )
         
-        # 4. Format and return response
+        # Format and return response
         return {
             'query_type': query_info['query_type'],
             'year': query_info['year'],
-            'form_info': form_info,
+            'form_info': {
+                'form_name': query_info['form_name'],
+                'field_name': query_info['field_name'],
+                'eorg': query_info['eorg'],
+                'description': query_info['description']
+            },
             'result': result
         }
     except ValueError as e:
@@ -52,11 +51,17 @@ def print_help():
     print("2. Taxable income: 'What is my taxable income for 2023?'")
     print("3. Total tax: 'What is my total tax for 2024?'")
     print("4. Refund: 'What is my refund amount for 2023?'")
+    print("5. Adjusted gross income: 'What is my AGI for 2024?'")
+    print("6. Filing status: 'What is my filing status for 2023?'")
+    print("7. Tax liability: 'What is my tax liability for 2024?'")
+    print("8. Tax payments: 'How much did I pay in taxes for 2023?'")
+    print("9. Tax credits: 'What tax credits did I receive in 2024?'")
+    print("10. Itemized deductions: 'Show my itemized deductions for 2023'")
     print("\nNote: Query must include a year (2020-2024)")
     print("Type 'exit' to quit\n")
 
 if __name__ == "__main__":
-    print("=== Tax Query System ===")
+    print("=== Tax Query System with CLINE NLP ===")
     print_help()
     
     while True:
